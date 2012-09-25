@@ -18,7 +18,8 @@ class Hiera
         # Select a server
         unless Config[:zookeeper].nil? or Config[:zookeeper][:server].nil? then
           if Config[:zookeeper][:server].class == Array then
-            server = Backend.parse_string(Config[:zookeeper][:server], scope)
+            # Note: not using Array#sample to keep it backwards compatible with ruby 1.8.7
+            server = Backend.parse_string(Config[:zookeeper][:server][rand(Config[:zookeeper][:server].length)], scope)
           else
             server = Backend.parse_string(Config[:zookeeper][:server], scope)
           end
