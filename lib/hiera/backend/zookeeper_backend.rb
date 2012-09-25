@@ -15,18 +15,41 @@ class Hiera
       def lookup(key, scope, order_override, resolution_type)
         answer = nil
         Hiera.debug("Looking up #{key} in ZooKeeper backend")
-        # Select a server
+        # Establish server(s) to check
+        servers = []
         unless Config[:zookeeper].nil? or Config[:zookeeper][:server].nil? then
-          if Config[:zookeeper][:server].class == Array then
-            # Note: not using Array#sample to keep it backwards compatible with ruby 1.8.7
-            server = Backend.parse_string(Config[:zookeeper][:server][rand(Config[:zookeeper][:server].length)], scope)
+          if Config[:zookeeper][:server].kind_of?(Array) then
+            Config[:zookeeper][:server].shuffle!
+            Config[:zookeeper][:server].each do |server|
+              servers.push(Backend.parse_string(server, scope))
+            end
           else
-            server = Backend.parse_string(Config[:zookeeper][:server], scope)
+            servers.push(Backend.parse_string(Config[:zookeeper][:server], scope))
           end
         else
-          server = 'localhost:2181'
+          servers.push('localhost:2181')
         end 
-        zk = Zookeeper.new(server)
+        # Establish connection timeout
+        if Config[:zookeeper].nil? or Config[:zookeeper][:timeout].nil? then
+          timeout = 1
+        else
+          timeout = Config[:zookeeper][:timeout]
+        end
+        # Establish connection
+        zk = nil
+        servers.each do |s|
+          begin 
+            zk = Zookeeper.new(s, timeout)
+            break if zk.connected?
+          rescue => e
+            Hiera.debug(e.message)
+            next
+          end
+        end
+        # If it did not work, raise that exception!
+        if zk.nil? or not zk.connected? then
+          raise(ZookeeperExceptions::ZookeeperException, "Could not connect to any server in configuration")
+        end
 
         Backend.datasources(scope, order_override) do |source|
           Hiera.debug("Looking for data source #{source}")
@@ -43,11 +66,11 @@ class Hiera
           end
           case resolution_type
           when :array
-            raise Exception, "Hiera type mismatch: expected Array and got #{new_answer.class}" unless new_answer.kind_of?(Array) or new_answer.kind_of?(String)
+            raise(Exception, "Hiera type mismatch: expected Array and got #{new_answer.class}") unless new_answer.kind_of?(Array) or new_answer.kind_of?(String)
             answer ||= []
             answer << new_answer
           when :hash
-            raise Exception, "Hiera type mismatch: expected Hash and got #{new_answer.class}" unless new_answer.kind_of?(Hash)
+            raise(Exception, "Hiera type mismatch: expected Hash and got #{new_answer.class}") unless new_answer.kind_of?(Hash)
             answer ||= {}
             answer = new_answer.merge(answer)
           else
@@ -55,12 +78,8 @@ class Hiera
             break
           end
         end
-        zk.close if !zk.nil?
+        zk.close if not zk.nil? and zk.connected?
         return answer
-
-        #rescue ZookeeperExceptions::ZookeeperException, RuntimeError
-        #  zk.close if !zk.nil?
-        #  return nil
       end
     end
   end
