@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'hiera_zookeeper'
-  s.version     = '0.2.2'
+  s.version     = '0.2.3'
   s.summary     = "A backend plugin to Hiera to enable it to reference data from Zookeeper."
   s.authors     = ["zahna"]
   s.email       = "scott@zahna.com"

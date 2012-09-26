@@ -14,19 +14,21 @@ Here they are:
   - two
   - three
 :zookeeper:
-  :server:
+  :servers:
     - server1:2181
     - server2:2181
   :timeout: 1
   :datadir: "/hiera"
+  :format: "yaml" or "json"
 </pre>
 
 ##Default Values
 These are the values used by hiera_zookeeper if not specified in hiera.yaml:
 
-Config[:zookeeper][:server] = localhost:2181<br />
+Config[:zookeeper][:servers] = ['localhost:2181']<br />
+Config[:zookeeper][:timeout] = 1<br />
 Config[:zookeeper][:datadir] = "/hiera"<br />
-Config[:zookeeper][:timeout] = 1
+Config[:zookeeper][:format] = "yaml"<br />
 
 ##Behavior based on above sample config
 
@@ -40,4 +42,5 @@ Hiera will search the following paths when resolving a key:
 
 ##Future Enhancements
 
- * Supporting JSON in addition to YAML.  (Would people want this?) 
+ * What would people want? 
+
