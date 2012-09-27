@@ -42,5 +42,5 @@ Hiera will search the following paths when resolving a key:
 
 ##Future Enhancements
 
- * What would people want? 
+ * I am open to feedback and suggestions.
 
